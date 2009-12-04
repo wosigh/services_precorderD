@@ -1,0 +1,41 @@
+.TH "TPS6105X.h" 3 "4 Dec 2009" "Version 0.1.0" "precorderD" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+TPS6105X.h \- 
+.SH SYNOPSIS
+.br
+.PP
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fBTPS6105X_t\fP"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBTPS6105X_avin\fP (int value)"
+.br
+.RI "\fIThis is a getter/setter method for the TPS6105X avin sysfs interface. \fP"
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "int TPS6105X_avin (int value)"
+.PP
+This is a getter/setter method for the TPS6105X avin sysfs interface. \fBParameters:\fP
+.RS 4
+\fIvalue\fP <0 to read, =0 to disable, >0 to enable 
+.RE
+.PP
+\fBReturns:\fP
+.RS 4
+<0 for error, =0 for disabled, >0 for enabled 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for precorderD from the source code.

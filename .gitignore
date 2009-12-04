@@ -1,0 +1,8 @@
+*.o
+*.a
+*.eg
+*.ipk
+*.swp
+*.swo
+*.swn
+*~
