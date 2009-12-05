@@ -57,6 +57,9 @@ $(OBJECTS): %.o: %.c
 	
 clean-objects:
 	rm -rf $(OBJECTS)
-	
-clean: clean-objects
+
+clean-docs:
+	rm -rf docs
+
+clean: clean-objects clean-docs
 	rm -rf $(PROGRAM_BASE)*
