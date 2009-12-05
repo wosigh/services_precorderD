@@ -7,6 +7,8 @@ MAIN_INCLUDES	=	-I. \
 					-I$(CROSS_COMPILE_ROOT)/usr/lib/glib-2.0/include \
 					-I$(CROSS_COMPILE_ROOT)/usr/include/lunaservice \
 					-I$(CROSS_COMPILE_ROOT)/usr/include/mjson \
+					-I$(CROSS_COMPILE_ROOT)/usr/include/gstreamer-0.10 \
+					-I$(CROSS_COMPILE_ROOT)/usr/include/libxml2 \
 					-Ilibircclient/include
 					
 ifeq ($(CS_TOOLCHAIN_ROOT),)				
@@ -32,17 +34,17 @@ endif
 endif
 endif
 
-CFLAGS			=	-Os -g $(MARCH_TUNE) -DVERSION=\"$(VERSION)\"
-					
-LIBS			= 	-llunaservice -lglib-2.0 -lmjson
-
 SHORTNAME		=	precorderD
 
 PROGRAM_BASE	=	us.ryanhope.$(SHORTNAME)
 
 PROGRAM			= 	$(PROGRAM_BASE)$(SUFFIX)
 
-OBJECTS			= 	misc.o TPS6105X.o main.o
+CFLAGS			=	-Os -g $(MARCH_TUNE) -DVERSION=\"$(VERSION)\" -DGETTEXT_PACKAGE=\"$(PROGRAM_BASE)\"
+					
+LIBS			= 	-llunaservice -lglib-2.0 -lmjson -lgstreamer-0.10
+
+OBJECTS			= 	gst-launch.o misc.o TPS6105X.o main.o
 
 DOXYGEN_FILE	=	$(SHORTNAME).doxyfile
 
