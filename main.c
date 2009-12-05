@@ -22,7 +22,7 @@
 
 int main(int argc, char *argv[]) {
 
-	printf("avin: %c\n", TPS6105X_avin(0));
+	printf("avin: %c\n", TPS6105X_avin(-1));
 
 	return 0;
 

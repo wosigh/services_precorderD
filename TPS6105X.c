@@ -44,10 +44,11 @@ int TPS6105X_avin(int value) {
 
 	fp = fopen(PATH_TPS6105X_AVIN, "w");
 	if (fp) {
-		if (value>0)
-			fprintf(fp, "0");
-		else
+		if (value>0) {
 			fprintf(fp, "1");
+		} else {
+			fprintf(fp, "0");
+		}
 		fflush(fp);
 		close(fp);
 	}
@@ -101,7 +102,7 @@ static TPS6105X_CURRENT_t TPS6105X_current(char* path, TPS6105X_CURRENT_t value)
 	fp = fopen(path, "r");
 	if (fp) {
 		int i = 0, len = 0;
-		char values[TPS6105X_CURRENT_NUM][12];
+		char values[TPS6105X_CURRENT_NUM][TPS6105X__MAX_VALUE_LENGTH];
 		len = fscanf(fp, "%s%s%s%s%s%s%s%s", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
 		for (;i<TPS6105X_CURRENT_NUM;i++) {
 			len = strlen(values[i]);
@@ -138,4 +139,51 @@ TPS6105X_CURRENT_t TPS6105X_torch_current(TPS6105X_CURRENT_t value) {
  */
 TPS6105X_CURRENT_t TPS6105X_flash_current(TPS6105X_CURRENT_t value) {
 	return TPS6105X_current(PATH_TPS6105X_FLASH_CURRENT, value);
+}
+
+/*!
+ * \brief A getter/setter method for the TPS6105X 'mode' sysfs interface.
+ *
+ *
+ * \param value <0 to read, >=0 to set value
+ *
+ * \return <0 for error, >=0 for the current value of the sysfs interface
+ */
+TPS6105X_MODE_t TPS6105X_mode(TPS6105X_MODE_t value) {
+
+	FILE *fp;
+
+	if (value < 0) goto read;
+
+	fp = fopen(PATH_TPS6105X_MODE, "w");
+	if (fp) {
+		if (value==TPS6105X_MODE_0)
+			fprintf(fp, "%s", TPS6105X_MODE__0);
+		else if (value==TPS6105X_MODE_1)
+			fprintf(fp, "%s", TPS6105X_MODE__1);
+		else if (value==TPS6105X_MODE_2)
+			fprintf(fp, "%s", TPS6105X_MODE__2);
+		fflush(fp);
+		close(fp);
+	}
+
+	read:
+
+	fp = fopen(PATH_TPS6105X_MODE, "r");
+	if (fp) {
+		int i = 0, len = 0;
+		char values[TPS6105X_MODE_NUM][TPS6105X__MAX_VALUE_LENGTH];
+		len = fscanf(fp, "%s%s%s", values[0], values[1], values[2]);
+		for (;i<TPS6105X_MODE_NUM;i++) {
+			len = strlen(values[i]);
+			char c = values[i][len-1];
+			if (c == '*') {
+				return i;
+			}
+		}
+		fclose(fp);
+	}
+
+	return -1;
+
 }

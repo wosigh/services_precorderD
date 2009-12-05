@@ -49,9 +49,9 @@ DOXYGEN_FILE	=	$(SHORTNAME).doxyfile
 .PHONY			: 	clean-objects clean
 
 
-all: $(PROGRAM) docs
+all: $(PROGRAM)
 
-fresh: clean all
+fresh: clean docs all
 
 $(PROGRAM): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $(PROGRAM) $(INCLUDES) $(LIBS)
