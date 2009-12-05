@@ -83,16 +83,22 @@ static TPS6105X_CURRENT_t TPS6105X_current(char* path, TPS6105X_CURRENT_t value)
 
 	fp = fopen(path, "w");
 	if (fp) {
-		switch (value) {
-		case TPS6105X_CURRENT_0: fprintf(fp, TPS6105X_CURRENT__0); break;
-		case TPS6105X_CURRENT_1: fprintf(fp, TPS6105X_CURRENT__1); break;
-		case TPS6105X_CURRENT_2: fprintf(fp, TPS6105X_CURRENT__2); break;
-		case TPS6105X_CURRENT_3: fprintf(fp, TPS6105X_CURRENT__3); break;
-		case TPS6105X_CURRENT_4: fprintf(fp, TPS6105X_CURRENT__4); break;
-		case TPS6105X_CURRENT_5: fprintf(fp, TPS6105X_CURRENT__5); break;
-		case TPS6105X_CURRENT_6: fprintf(fp, TPS6105X_CURRENT__6); break;
-		case TPS6105X_CURRENT_7: fprintf(fp, TPS6105X_CURRENT__7); break;
-		}
+		if (value==TPS6105X_CURRENT_0)
+			fprintf(fp, TPS6105X_CURRENT__0);
+		else if (value==TPS6105X_CURRENT_1)
+			fprintf(fp, TPS6105X_CURRENT__1);
+		else if (value==TPS6105X_CURRENT_2)
+			fprintf(fp, TPS6105X_CURRENT__2);
+		else if (value==TPS6105X_CURRENT_3)
+			fprintf(fp, TPS6105X_CURRENT__3);
+		else if (value==TPS6105X_CURRENT_4)
+			fprintf(fp, TPS6105X_CURRENT__4);
+		else if (value==TPS6105X_CURRENT_5)
+			fprintf(fp, TPS6105X_CURRENT__5);
+		else if (value==TPS6105X_CURRENT_6)
+			fprintf(fp, TPS6105X_CURRENT__6);
+		else if (value==TPS6105X_CURRENT_7)
+			fprintf(fp, TPS6105X_CURRENT__7);
 		fflush(fp);
 		close(fp);
 	}
@@ -106,7 +112,7 @@ static TPS6105X_CURRENT_t TPS6105X_current(char* path, TPS6105X_CURRENT_t value)
 		len = fscanf(fp, "%s%s%s%s%s%s%s%s", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
 		for (;i<TPS6105X_CURRENT_NUM;i++) {
 			len = strlen(values[i]);
-			if (values[i][len] == '*') {
+			if (values[i][len-1] == '*') {
 				return i;
 			}
 		}
@@ -158,11 +164,11 @@ TPS6105X_MODE_t TPS6105X_mode(TPS6105X_MODE_t value) {
 	fp = fopen(PATH_TPS6105X_MODE, "w");
 	if (fp) {
 		if (value==TPS6105X_MODE_0)
-			fprintf(fp, "%s", TPS6105X_MODE__0);
+			fprintf(fp, TPS6105X_MODE__0);
 		else if (value==TPS6105X_MODE_1)
-			fprintf(fp, "%s", TPS6105X_MODE__1);
+			fprintf(fp, TPS6105X_MODE__1);
 		else if (value==TPS6105X_MODE_2)
-			fprintf(fp, "%s", TPS6105X_MODE__2);
+			fprintf(fp, TPS6105X_MODE__2);
 		fflush(fp);
 		close(fp);
 	}
@@ -176,8 +182,7 @@ TPS6105X_MODE_t TPS6105X_mode(TPS6105X_MODE_t value) {
 		len = fscanf(fp, "%s%s%s", values[0], values[1], values[2]);
 		for (;i<TPS6105X_MODE_NUM;i++) {
 			len = strlen(values[i]);
-			char c = values[i][len-1];
-			if (c == '*') {
+			if (values[i][len-1] == '*') {
 				return i;
 			}
 		}
