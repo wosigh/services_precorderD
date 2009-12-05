@@ -36,16 +36,20 @@ CFLAGS			=	-Os -g $(MARCH_TUNE) -DVERSION=\"$(VERSION)\"
 					
 LIBS			= 	-llunaservice -lglib-2.0 -lmjson
 
-PROGRAM_BASE	=	us.ryanhope.precorderD
+SHORTNAME		=	precorderD
+
+PROGRAM_BASE	=	us.ryanhope.$(SHORTNAME)
 
 PROGRAM			= 	$(PROGRAM_BASE)$(SUFFIX)
 
 OBJECTS			= 	TPS6105X.o main.o
 
+DOXYGEN_FILE	=	$(SHORTNAME).doxyfile
+
 .PHONY			: 	clean-objects clean
 
 
-all: $(PROGRAM)
+all: $(PROGRAM) docs
 
 fresh: clean all
 
@@ -54,6 +58,9 @@ $(PROGRAM): $(OBJECTS)
 
 $(OBJECTS): %.o: %.c
 	$(CC) $(CFLAGS) -c $<  -o $@ -I. $(INCLUDES) $(LIBS)
+	
+docs:
+	doxygen $(DOXYGEN_FILE)
 	
 clean-objects:
 	rm -rf $(OBJECTS)
