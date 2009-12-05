@@ -66,51 +66,49 @@ int TPS6105X_avin(int value) {
 }
 
 /*!
- * \brief A getter/setter helper method for the TPS6105X 'torch_current' and
- * 'flash_current' sysfs interface.
+ * \brief A getter/setter method for the TPS6105X 'torch_current' sysfs interface.
  *
  *
- * \param path The path of the sysfs interface
  * \param value <0 to read, >=0 to set value
  *
  * \return <0 for error, >=0 for the current value of the sysfs interface
  */
-static TPS6105X_CURRENT_t TPS6105X_current(char* path, TPS6105X_CURRENT_t value) {
+TPS6105X_TORCH_CURRENT_t TPS6105X_torch_current(TPS6105X_TORCH_CURRENT_t value) {
 
 	FILE *fp;
 
 	if (value < 0) goto read;
 
-	fp = fopen(path, "w");
+	fp = fopen(PATH_TPS6105X_TORCH_CURRENT, "w");
 	if (fp) {
-		if (value==TPS6105X_CURRENT_0)
-			fprintf(fp, TPS6105X_CURRENT__0);
-		else if (value==TPS6105X_CURRENT_1)
-			fprintf(fp, TPS6105X_CURRENT__1);
-		else if (value==TPS6105X_CURRENT_2)
-			fprintf(fp, TPS6105X_CURRENT__2);
-		else if (value==TPS6105X_CURRENT_3)
-			fprintf(fp, TPS6105X_CURRENT__3);
-		else if (value==TPS6105X_CURRENT_4)
-			fprintf(fp, TPS6105X_CURRENT__4);
-		else if (value==TPS6105X_CURRENT_5)
-			fprintf(fp, TPS6105X_CURRENT__5);
-		else if (value==TPS6105X_CURRENT_6)
-			fprintf(fp, TPS6105X_CURRENT__6);
-		else if (value==TPS6105X_CURRENT_7)
-			fprintf(fp, TPS6105X_CURRENT__7);
+		if (value==TPS6105X_TORCH_CURRENT_0)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__0);
+		else if (value==TPS6105X_TORCH_CURRENT_1)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__1);
+		else if (value==TPS6105X_TORCH_CURRENT_2)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__2);
+		else if (value==TPS6105X_TORCH_CURRENT_3)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__3);
+		else if (value==TPS6105X_TORCH_CURRENT_4)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__4);
+		else if (value==TPS6105X_TORCH_CURRENT_5)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__5);
+		else if (value==TPS6105X_TORCH_CURRENT_6)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__6);
+		else if (value==TPS6105X_TORCH_CURRENT_7)
+			fprintf(fp, TPS6105X_TORCH_CURRENT__7);
 		fflush(fp);
 		close(fp);
 	}
 
 	read:
 
-	fp = fopen(path, "r");
+	fp = fopen(PATH_TPS6105X_TORCH_CURRENT, "r");
 	if (fp) {
 		int i = 0, len = 0;
-		char values[TPS6105X_CURRENT_NUM][TPS6105X__MAX_VALUE_LENGTH];
+		char values[TPS6105X_TORCH_CURRENT_NUM][TPS6105X__MAX_VALUE_LENGTH];
 		len = fscanf(fp, "%s%s%s%s%s%s%s%s", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
-		for (;i<TPS6105X_CURRENT_NUM;i++) {
+		for (;i<TPS6105X_TORCH_CURRENT_NUM;i++) {
 			len = strlen(values[i]);
 			if (values[i][len-1] == '*') {
 				return i;
@@ -124,18 +122,6 @@ static TPS6105X_CURRENT_t TPS6105X_current(char* path, TPS6105X_CURRENT_t value)
 }
 
 /*!
- * \brief A getter/setter method for the TPS6105X 'torch_current' sysfs interface.
- *
- *
- * \param value <0 to read, >=0 to set value
- *
- * \return <0 for error, >=0 for the current value of the sysfs interface
- */
-TPS6105X_CURRENT_t TPS6105X_torch_current(TPS6105X_CURRENT_t value) {
-	return TPS6105X_current(PATH_TPS6105X_TORCH_CURRENT, value);
-}
-
-/*!
  * \brief A getter/setter method for the TPS6105X 'flash_current' sysfs interface.
  *
  *
@@ -143,8 +129,52 @@ TPS6105X_CURRENT_t TPS6105X_torch_current(TPS6105X_CURRENT_t value) {
  *
  * \return <0 for error, >=0 for the current value of the sysfs interface
  */
-TPS6105X_CURRENT_t TPS6105X_flash_current(TPS6105X_CURRENT_t value) {
-	return TPS6105X_current(PATH_TPS6105X_FLASH_CURRENT, value);
+TPS6105X_FLASH_CURRENT_t TPS6105X_flash_current(TPS6105X_FLASH_CURRENT_t value) {
+
+	FILE *fp;
+
+	if (value < 0) goto read;
+
+	fp = fopen(PATH_TPS6105X_FLASH_CURRENT, "w");
+	if (fp) {
+		if (value==TPS6105X_FLASH_CURRENT_0)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__0);
+		else if (value==TPS6105X_FLASH_CURRENT_1)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__1);
+		else if (value==TPS6105X_FLASH_CURRENT_2)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__2);
+		else if (value==TPS6105X_FLASH_CURRENT_3)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__3);
+		else if (value==TPS6105X_FLASH_CURRENT_4)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__4);
+		else if (value==TPS6105X_FLASH_CURRENT_5)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__5);
+		else if (value==TPS6105X_FLASH_CURRENT_6)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__6);
+		else if (value==TPS6105X_FLASH_CURRENT_7)
+			fprintf(fp, TPS6105X_FLASH_CURRENT__7);
+		fflush(fp);
+		close(fp);
+	}
+
+	read:
+
+	fp = fopen(PATH_TPS6105X_FLASH_CURRENT, "r");
+	if (fp) {
+		int i = 0, len = 0;
+		char values[TPS6105X_FLASH_CURRENT_NUM][TPS6105X__MAX_VALUE_LENGTH];
+		len = fscanf(fp, "%s%s%s%s%s%s%s%s", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
+		for (;i<TPS6105X_FLASH_CURRENT_NUM;i++) {
+			len = strlen(values[i]);
+			if (values[i][len-1] == '*') {
+				return i;
+			}
+		}
+		fclose(fp);
+	}
+
+	return -1;
+
 }
 
 /*!
