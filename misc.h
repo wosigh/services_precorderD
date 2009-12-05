@@ -16,15 +16,11 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  =============================================================================*/
 
-#include <stdio.h>
+#ifndef MISC_H_
+#define MISC_H_
 
-#include "TPS6105X.h"
-#include "misc.h"
+#include <stdbool.h>
 
-int main(int argc, char *argv[]) {
+bool make_sure_dir_exists(char *path);
 
-	printf("mkdir: %d\n", make_sure_dir_exists("/media/internal/video/"));
-
-	return 0;
-
-}
+#endif /* MISC_H_ */

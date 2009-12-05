@@ -17,14 +17,34 @@
  =============================================================================*/
 
 #include <stdio.h>
+#include <errno.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include "TPS6105X.h"
 #include "misc.h"
 
-int main(int argc, char *argv[]) {
+/*!
+ * \brief A method to make sure a particular directory exists.
+ *
+ *
+ * \param path The path that needs to exist
+ *
+ * \return true if directory exists, false if directory does not exist
+ */
+bool make_sure_dir_exists(char *path) {
 
-	printf("mkdir: %d\n", make_sure_dir_exists("/media/internal/video/"));
+	bool ret = false;
 
-	return 0;
+	DIR *dir;
+	dir = opendir(path);
+	if (dir) {
+		ret = true;
+		closedir(dir);
+	} else if (mkdir(path, 0777)==0) {
+		ret = true;
+	}
+
+	return ret;
 
 }

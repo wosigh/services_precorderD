@@ -42,7 +42,7 @@ PROGRAM_BASE	=	us.ryanhope.$(SHORTNAME)
 
 PROGRAM			= 	$(PROGRAM_BASE)$(SUFFIX)
 
-OBJECTS			= 	TPS6105X.o main.o
+OBJECTS			= 	misc.o TPS6105X.o main.o
 
 DOXYGEN_FILE	=	$(SHORTNAME).doxyfile
 
