@@ -44,7 +44,7 @@ CFLAGS			=	-Os -g $(MARCH_TUNE) -DVERSION=\"$(VERSION)\" -DGETTEXT_PACKAGE=\"$(P
 					
 LIBS			= 	-llunaservice -lglib-2.0 -lmjson -lgstreamer-0.10
 
-OBJECTS			= 	gst-launch.o misc.o TPS6105X.o main.o
+OBJECTS			= 	misc.o TPS6105X.o main.o
 
 DOXYGEN_FILE	=	$(SHORTNAME).doxyfile
 
