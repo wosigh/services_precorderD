@@ -21,219 +21,25 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-/* FIXME: hack alert */
-#ifdef WIN32
-#define DISABLE_FAULT_HANDLER
-#endif
-
 #include <string.h>
 #include <signal.h>
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifndef DISABLE_FAULT_HANDLER
 #include <sys/wait.h>
-#endif
 #include <locale.h>             /* for LC_ALL */
 #include "tools.h"
 
-/* FIXME: This is just a temporary hack.  We should have a better
- * check for siginfo handling. */
-#ifdef SA_SIGINFO
-#define USE_SIGINFO
-#endif
-
 extern volatile gboolean glib_on_error_halt;
 
-#ifndef DISABLE_FAULT_HANDLER
 static void fault_restore (void);
 static void fault_spin (void);
 static void sigint_restore (void);
 static gboolean caught_intr = FALSE;
-#endif
 
 static GstElement *pipeline;
 static gboolean caught_error = FALSE;
 static gboolean tags = FALSE;
 static gboolean messages = FALSE;
 static gboolean is_live = FALSE;
-
-
-#ifndef GST_DISABLE_LOADSAVE
-static GstElement *
-xmllaunch_parse_cmdline (const gchar ** argv)
-{
-  GstElement *pipeline = NULL, *e;
-  GstXML *xml;
-  gboolean err;
-  const gchar *arg;
-  gchar *element, *property, *value;
-  GList *l;
-  gint i = 0;
-
-  if (!(arg = argv[0])) {
-    g_print (_
-        ("Usage: gst-xmllaunch <file.xml> [ element.property=value ... ]\n"));
-    exit (1);
-  }
-
-  xml = gst_xml_new ();
-  /* FIXME guchar from gstxml.c */
-  err = gst_xml_parse_file (xml, (guchar *) arg, NULL);
-
-  if (err != TRUE) {
-    fprintf (stderr, _("ERROR: parse of xml file '%s' failed.\n"), arg);
-    exit (1);
-  }
-
-  l = gst_xml_get_topelements (xml);
-  if (!l) {
-    fprintf (stderr, _("ERROR: no toplevel pipeline element in file '%s'.\n"),
-        arg);
-    exit (1);
-  }
-
-  if (l->next)
-    fprintf (stderr,
-        _("WARNING: only one toplevel element is supported at this time."));
-
-  pipeline = GST_ELEMENT (l->data);
-
-  while ((arg = argv[++i])) {
-    element = g_strdup (arg);
-    property = strchr (element, '.');
-    value = strchr (element, '=');
-
-    if (!(element < property && property < value)) {
-      fprintf (stderr,
-          _("ERROR: could not parse command line argument %d: %s.\n"), i,
-          element);
-      g_free (element);
-      exit (1);
-    }
-
-    *property++ = '\0';
-    *value++ = '\0';
-
-    e = gst_bin_get_by_name (GST_BIN (pipeline), element);
-    if (!e) {
-      fprintf (stderr, _("WARNING: element named '%s' not found.\n"), element);
-    } else {
-      gst_util_set_object_arg (G_OBJECT (e), property, value);
-    }
-    g_free (element);
-  }
-
-  if (!l)
-    return NULL;
-
-  gst_object_ref (pipeline);
-  gst_object_unref (xml);
-  return pipeline;
-}
-#endif
-
-#ifndef DISABLE_FAULT_HANDLER
-#ifndef USE_SIGINFO
-static void
-fault_handler_sighandler (int signum)
-{
-  fault_restore ();
-
-  /* printf is used instead of g_print(), since it's less likely to
-   * deadlock */
-  switch (signum) {
-    case SIGSEGV:
-      printf ("Caught SIGSEGV\n");
-      break;
-    case SIGQUIT:
-      printf ("Caught SIGQUIT\n");
-      break;
-    default:
-      printf ("signo:  %d\n", signum);
-      break;
-  }
-
-  fault_spin ();
-}
-
-#else /* USE_SIGINFO */
-
-static void
-fault_handler_sigaction (int signum, siginfo_t * si, void *misc)
-{
-  fault_restore ();
-
-  /* printf is used instead of g_print(), since it's less likely to
-   * deadlock */
-  switch (si->si_signo) {
-    case SIGSEGV:
-      printf ("Caught SIGSEGV accessing address %p\n", si->si_addr);
-      break;
-    case SIGQUIT:
-      printf ("Caught SIGQUIT\n");
-      break;
-    default:
-      printf ("signo:  %d\n", si->si_signo);
-      printf ("errno:  %d\n", si->si_errno);
-      printf ("code:   %d\n", si->si_code);
-      break;
-  }
-
-  fault_spin ();
-}
-#endif /* USE_SIGINFO */
-
-static void
-fault_spin (void)
-{
-  int spinning = TRUE;
-
-  glib_on_error_halt = FALSE;
-  g_on_error_stack_trace ("gst-launch");
-
-  wait (NULL);
-
-  /* FIXME how do we know if we were run by libtool? */
-  printf ("Spinning.  Please run 'gdb gst-launch %d' to continue debugging, "
-      "Ctrl-C to quit, or Ctrl-\\ to dump core.\n", (gint) getpid ());
-  while (spinning)
-    g_usleep (1000000);
-}
-
-static void
-fault_restore (void)
-{
-  struct sigaction action;
-
-  memset (&action, 0, sizeof (action));
-  action.sa_handler = SIG_DFL;
-
-  sigaction (SIGSEGV, &action, NULL);
-  sigaction (SIGQUIT, &action, NULL);
-}
-
-static void
-fault_setup (void)
-{
-  struct sigaction action;
-
-  memset (&action, 0, sizeof (action));
-#ifdef USE_SIGINFO
-  action.sa_sigaction = fault_handler_sigaction;
-  action.sa_flags = SA_SIGINFO;
-#else
-  action.sa_handler = fault_handler_sighandler;
-#endif
-
-  sigaction (SIGSEGV, &action, NULL);
-  sigaction (SIGQUIT, &action, NULL);
-}
-#endif /* DISABLE_FAULT_HANDLER */
 
 static void
 print_tag (const GstTagList * list, const gchar * tag, gpointer unused)
@@ -595,10 +401,6 @@ main2 (int argc, char *argv[])
         N_("Output messages"), NULL},
     {"exclude", 'X', 0, G_OPTION_ARG_NONE, &exclude_args,
         N_("Do not output status information of TYPE"), N_("TYPE1,TYPE2,...")},
-#ifndef GST_DISABLE_LOADSAVE
-    {"output", 'o', 0, G_OPTION_ARG_STRING, &savefile,
-        N_("Save xml representation of pipeline to FILE and exit"), N_("FILE")},
-#endif
     {"no-fault", 'f', 0, G_OPTION_ARG_NONE, &no_fault,
         N_("Do not install a fault handler"), NULL},
     {"trace", 'T', 0, G_OPTION_ARG_NONE, &trace,
@@ -639,14 +441,6 @@ main2 (int argc, char *argv[])
 
   gst_tools_print_version ("gst-launch");
 
-#ifndef DISABLE_FAULT_HANDLER
-  if (!no_fault)
-    fault_setup ();
-
-  sigint_setup ();
-  play_signal_setup ();
-#endif
-
   if (trace) {
     if (!gst_alloc_trace_available ()) {
       g_warning ("Trace not available (recompile with trace enabled).");
@@ -657,11 +451,6 @@ main2 (int argc, char *argv[])
   /* make a null-terminated version of argv */
   argvn = g_new0 (char *, argc);
   memcpy (argvn, argv + 1, sizeof (char *) * (argc - 1));
-#ifndef GST_DISABLE_LOADSAVE
-  if (strstr (argv[0], "gst-xmllaunch")) {
-    pipeline = xmllaunch_parse_cmdline ((const gchar **) argvn);
-  } else
-#endif
   {
     pipeline =
         (GstElement *) gst_parse_launchv ((const gchar **) argvn, &error);
@@ -690,11 +479,6 @@ main2 (int argc, char *argv[])
     g_signal_connect (pipeline, "deep_notify",
         G_CALLBACK (gst_object_default_deep_notify), exclude_list);
   }
-#ifndef GST_DISABLE_LOADSAVE
-  if (savefile) {
-    gst_xml_write_file (GST_ELEMENT (pipeline), fopen (savefile, "w"));
-  }
-#endif
 
   if (!savefile) {
     GstState state, pending;
