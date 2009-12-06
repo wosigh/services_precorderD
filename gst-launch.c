@@ -386,35 +386,6 @@ exit:
 int
 main2 (int argc, char *argv[])
 {
-  /* options */
-  gboolean verbose = FALSE;
-  gboolean no_fault = FALSE;
-  gboolean trace = FALSE;
-  gchar *savefile = NULL;
-  gchar *exclude_args = NULL;
-  GOptionEntry options[] = {
-    {"tags", 't', 0, G_OPTION_ARG_NONE, &tags,
-        N_("Output tags (also known as metadata)"), NULL},
-    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose,
-        N_("Output status information and property notifications"), NULL},
-    {"messages", 'm', 0, G_OPTION_ARG_NONE, &messages,
-        N_("Output messages"), NULL},
-    {"exclude", 'X', 0, G_OPTION_ARG_NONE, &exclude_args,
-        N_("Do not output status information of TYPE"), N_("TYPE1,TYPE2,...")},
-    {"no-fault", 'f', 0, G_OPTION_ARG_NONE, &no_fault,
-        N_("Do not install a fault handler"), NULL},
-    {"trace", 'T', 0, G_OPTION_ARG_NONE, &trace,
-        N_("Print alloc trace (if enabled at compile time)"), NULL},
-    GST_TOOLS_GOPTION_VERSION,
-    {NULL}
-  };
-  GOptionContext *ctx;
-  GError *err = NULL;
-  gchar **argvn;
-  GError *error = NULL;
-  gint res = 0;
-
-  free (malloc (8));            /* -lefence */
 
 #ifdef ENABLE_NLS
   bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
