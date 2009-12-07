@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
 
 	PIPELINE_OPTS_t opts;
 
+	opts.file_location			= "/media/internal/video/video.mp4";
+
 	opts.data_throughput		= true;
 
 	opts.num_buffers			= 300;

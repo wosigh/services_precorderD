@@ -65,6 +65,7 @@ void record_video(PIPELINE_OPTS_t *opts) {
 	GMainLoop *loop;
 
 	GstElement *pipeline, *vsrc, *asrc, *venc, *aenc, *vqueue, *aqueue, *muxer;
+	GstCaps *vcaps, *acaps;
 	GstBus *bus;
 
 	gst_init(NULL, NULL);
@@ -101,6 +102,7 @@ void record_video(PIPELINE_OPTS_t *opts) {
 
 	// Setip muxer
 	muxer = gst_element_factory_make("palmmpeg4mux", "muxer");
+	g_object_set(G_OBJECT(muxer), "location", opts->file_location, NULL);
 	g_object_set(G_OBJECT(muxer), "QTQCELPMuxing", opts->muxer_flavor, NULL);
 	g_object_set(G_OBJECT(muxer), "StreamMuxSelection", opts->muxer_streams, NULL);
 	g_object_set(G_OBJECT(muxer), "enable", opts->data_throughput, NULL);
@@ -108,8 +110,20 @@ void record_video(PIPELINE_OPTS_t *opts) {
 	// Bundle up elements into a bin
 	gst_bin_add_many(GST_BIN(pipeline), vsrc, vqueue, venc, asrc, aqueue, aenc, muxer, NULL);
 
+	// Build video caps
+	vcaps = gst_caps_new_simple(
+			"audio/x-raw-int",
+			"width",			G_TYPE_INT,		16,
+			"depth",			G_TYPE_INT,		16,
+			"endianness",		G_TYPE_INT,		1234,
+			"rate",				G_TYPE_INT,		opts->audio_sampling_rate,
+			"channels",			G_TYPE_INT,		2,
+			"signed",			G_TYPE_BOOLEAN,	TRUE,
+			NULL
+	);
+
 	// Build audio caps
-	GstCaps *acaps = gst_caps_new_simple(
+	acaps = gst_caps_new_simple(
 			"audio/x-raw-int",
 			"width",			G_TYPE_INT,		16,
 			"depth",			G_TYPE_INT,		16,

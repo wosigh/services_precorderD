@@ -70,6 +70,8 @@ typedef enum {
  */
 typedef struct {
 
+	char					*file_location;
+
 	bool					data_throughput;
 
 	int						num_buffers;
