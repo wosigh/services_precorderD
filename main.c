@@ -22,7 +22,8 @@
 
 int main(int argc, char *argv[]) {
 
-	PIPELINE_OPTS_t opts;
+	start_service();
+	/*PIPELINE_OPTS_t opts;
 
 	opts.file_location			= "/media/internal/video/video.mp4";
 
@@ -35,12 +36,12 @@ int main(int argc, char *argv[]) {
 	opts.audio_sampling_rate	= 22050;
 	opts.audio_encoding			= AUDIO_ENCODING_AAC;
 	opts.aac_stream_bitrate		= 128000;
-	opts.aac_encoding_quality	= AAC_ENCODING_QUALITY_0;
+	opts.aac_encoding_quality	= AAC_ENCODING_QUALITY_5;
 
 	opts.muxer_flavor			= MUXING_FLAVOR_QUICKTIME;
 	opts.muxer_streams			= MUXER_STREAMS_BOTH;
 
-	record_video(&opts);
+	record_video(&opts);*/
 
 	return 0;
 

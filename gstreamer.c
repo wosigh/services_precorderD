@@ -89,6 +89,7 @@ void record_video(PIPELINE_OPTS_t *opts) {
 
 	// Setup audio source
 	asrc = gst_element_factory_make("alsasrc", "audio-source");
+	//g_object_set(G_OBJECT(asrc), "slave-method", 0, NULL);
 
 	// Setup audio queue
 	aqueue = gst_element_factory_make("queue", "audio-queue");
@@ -112,13 +113,11 @@ void record_video(PIPELINE_OPTS_t *opts) {
 
 	// Build video caps
 	vcaps = gst_caps_new_simple(
-			"audio/x-raw-int",
-			"width",			G_TYPE_INT,		16,
-			"depth",			G_TYPE_INT,		16,
-			"endianness",		G_TYPE_INT,		1234,
-			"rate",				G_TYPE_INT,		opts->audio_sampling_rate,
-			"channels",			G_TYPE_INT,		2,
-			"signed",			G_TYPE_BOOLEAN,	TRUE,
+			"video/x-raw-yuv",
+			"width",			G_TYPE_INT,			480,
+			"height",			G_TYPE_INT,			320,
+			"framerate",		GST_TYPE_FRACTION,	30, 1,
+			//"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('U', 'Y', 'V', 'Y'),
 			NULL
 	);
 
@@ -135,9 +134,11 @@ void record_video(PIPELINE_OPTS_t *opts) {
 	);
 
 	// Link elements
-	gst_element_link_filtered(asrc, aqueue, acaps);
-	gst_element_link_many(aqueue, aenc, muxer, NULL);
-	gst_element_link_many(vsrc, venc, muxer, NULL);
+	gst_element_link_filtered(asrc, aenc, acaps);
+	gst_element_link_many(aenc, muxer, NULL);
+
+	gst_element_link_filtered(vsrc, venc, vcaps);
+	gst_element_link_many(venc, muxer, NULL);
 
 	gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
