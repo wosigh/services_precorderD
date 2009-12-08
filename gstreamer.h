@@ -19,6 +19,7 @@
 #ifndef GSTREAMER_H_
 #define GSTREAMER_H_
 
+#include <limits.h>
 #include <stdbool.h>
 
 /*!
@@ -70,9 +71,9 @@ typedef enum {
  */
 typedef struct {
 
-	char					*file_location;
+	char					file[PATH_MAX];
 
-	bool					data_throughput;
+	unsigned int			data_throughput;
 
 	int						num_buffers;
 	VIDEO_FORMAT_t			video_format;
@@ -88,6 +89,6 @@ typedef struct {
 
 } PIPELINE_OPTS_t;
 
-void record_video(PIPELINE_OPTS_t *opts);
+void *record_video(void *ptr);
 
 #endif /* GSTREAMER_H_ */

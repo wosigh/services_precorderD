@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <dirent.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -46,5 +47,18 @@ bool make_sure_dir_exists(char *path) {
 	}
 
 	return ret;
+
+}
+
+void get_timestamp_string(char* timestamp) {
+
+	struct tm *now = NULL;
+	int hour = 0;
+	time_t time_value = 0;
+
+	time_value = time(NULL);
+	now = localtime(&time_value);
+
+	sprintf(timestamp, "%d%.2d%.2d%.2d%.2d%.2d", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 
 }

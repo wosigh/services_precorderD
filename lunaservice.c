@@ -17,12 +17,15 @@
  =============================================================================*/
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
 #include <lunaservice.h>
-#include <json_helper.h>
 
-#include <TPS6105X.h>
+#include "gstreamer.h"
+#include "TPS6105X.h"
 
 #define SERVICE_URI				"us.ryanhope.precorderD"
+#define DEFAULT_FILE_LOCATION	"/media/internal/video"
 
 LSPalmService *serviceHandle;
 LSHandle *priv_bus;
@@ -113,8 +116,74 @@ bool set_led(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
 }
 
+bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
+
+	PIPELINE_OPTS_t *opts =  malloc(sizeof(PIPELINE_OPTS_t));
+
+	LSError lserror;
+	LSErrorInit(&lserror);
+
+	json_t *root = json_parse_document(LSMessageGetPayload(message));
+
+	json_t *data_throughput			= json_find_first_label(root, "data_throughput");
+	json_t *num_buffers				= json_find_first_label(root, "num_buffers");
+	json_t *video_format			= json_find_first_label(root, "video_format");
+	json_t *video_bitrate			= json_find_first_label(root, "video_bitrate");
+	json_t *audio_sampling_rate		= json_find_first_label(root, "audio_sampling_rate");
+	json_t *audio_encoding			= json_find_first_label(root, "audio_encoding");
+	json_t *aac_stream_bitrate		= json_find_first_label(root, "aac_stream_bitrate");
+	json_t *aac_encoding_quality	= json_find_first_label(root, "aac_encoding_quality");
+	json_t *muxer_flavor			= json_find_first_label(root, "muxer_flavor");
+	json_t *muxer_streams			= json_find_first_label(root, "muxer_streams");
+
+	opts->muxer_flavor = muxer_flavor?atoi(muxer_flavor->child->text):MUXING_FLAVOR_QUICKTIME;
+	char *extension;
+	if (opts->muxer_flavor)
+		extension = "mp4";
+	else
+		extension = "3gp";
+
+	char timestamp[16];
+	get_timestamp_string(timestamp);
+
+	sprintf(opts->file, "%s/precorder_%s.%s", DEFAULT_FILE_LOCATION, timestamp, extension);
+
+	opts->data_throughput		= data_throughput?atoi(data_throughput->child->text):1;
+
+	opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):150;
+	opts->video_format			= video_format?atoi(video_format->child->text):VIDEO_FORMAT_H264;
+	opts->video_bitrate			= video_bitrate?atoi(video_bitrate->child->text):64000;
+
+	opts->audio_sampling_rate	= audio_sampling_rate?atoi(audio_sampling_rate->child->text):22050;
+	opts->audio_encoding		= audio_encoding?atoi(audio_encoding->child->text):AUDIO_ENCODING_AAC;
+	opts->aac_stream_bitrate	= aac_stream_bitrate?atoi(aac_stream_bitrate->child->text):128000;
+	opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_5;
+
+	opts->muxer_streams			= muxer_streams?atoi(muxer_streams->child->text):MUXER_STREAMS_BOTH;
+
+	json_free_value(&root);
+
+	pthread_t record_thread;
+	pthread_create(&record_thread, NULL, record_video, opts);
+
+	//pthread_join(record_thread, NULL);
+
+	LSMessageReply(lshandle, message, "{\"returnValue\":true}", &lserror);
+
+	end:
+	if (LSErrorIsSet(&lserror)) {
+		LSErrorPrint(&lserror, stderr);
+		LSErrorFree(&lserror);
+	}
+
+	return TRUE;
+
+}
+
 LSMethod methods[] = {
-		{"set_led",	set_led},
+		{"set_led",			set_led},
+		{"start_record",	start_record},
+		//{"stop_record",		stop_record},
 		{0,0}
 };
 

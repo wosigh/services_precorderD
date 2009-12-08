@@ -23,4 +23,6 @@
 
 bool make_sure_dir_exists(char *path);
 
+void get_timestamp_string(char* timestamp);
+
 #endif /* MISC_H_ */

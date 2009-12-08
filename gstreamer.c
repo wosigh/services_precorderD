@@ -60,7 +60,9 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
 
 }
 
-void record_video(PIPELINE_OPTS_t *opts) {
+void *record_video(void *ptr) {
+
+	PIPELINE_OPTS_t *opts = (PIPELINE_OPTS_t *)ptr;
 
 	GMainLoop *loop;
 
@@ -103,7 +105,7 @@ void record_video(PIPELINE_OPTS_t *opts) {
 
 	// Setip muxer
 	muxer = gst_element_factory_make("palmmpeg4mux", "muxer");
-	g_object_set(G_OBJECT(muxer), "location", opts->file_location, NULL);
+	g_object_set(G_OBJECT(muxer), "location", opts->file, NULL);
 	g_object_set(G_OBJECT(muxer), "QTQCELPMuxing", opts->muxer_flavor, NULL);
 	g_object_set(G_OBJECT(muxer), "StreamMuxSelection", opts->muxer_streams, NULL);
 	g_object_set(G_OBJECT(muxer), "enable", opts->data_throughput, NULL);
@@ -134,10 +136,10 @@ void record_video(PIPELINE_OPTS_t *opts) {
 	);
 
 	// Link elements
-	gst_element_link_filtered(asrc, aenc, acaps);
-	gst_element_link_many(aenc, muxer, NULL);
+	gst_element_link_filtered(asrc, aqueue, acaps);
+	gst_element_link_many(aqueue, aenc, muxer, NULL);
 
-	gst_element_link_filtered(vsrc, venc, vcaps);
+	gst_element_link(vsrc, venc);
 	gst_element_link_many(venc, muxer, NULL);
 
 	gst_element_set_state(pipeline, GST_STATE_PLAYING);
