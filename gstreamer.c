@@ -60,6 +60,48 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
 
 }
 
+void gst_object_deep_notify(GObject *object, GstObject *orig, GParamSpec *pspec, gchar **excluded_props) {
+
+	GValue value = { 0, };        /* the important thing is that value.type = 0 */
+	gchar *str = NULL;
+	gchar *name = NULL;
+
+	if (pspec->flags & G_PARAM_READABLE) {
+		/* let's not print these out for excluded properties... */
+		while (excluded_props != NULL && *excluded_props != NULL) {
+			if (strcmp (pspec->name, *excluded_props) == 0)
+				return;
+			excluded_props++;
+		}
+		g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
+		g_object_get_property (G_OBJECT (orig), pspec->name, &value);
+
+		/* FIXME: handle flags */
+		if (G_IS_PARAM_SPEC_ENUM (pspec)) {
+			GEnumValue *enum_value;
+
+			enum_value =
+				g_enum_get_value (G_ENUM_CLASS (g_type_class_ref (pspec->value_type)),
+						g_value_get_enum (&value));
+
+			str = g_strdup_printf ("%s (%d)", enum_value->value_nick,
+					enum_value->value);
+		} else {
+			str = g_strdup_value_contents (&value);
+		}
+		name = gst_object_get_path_string (orig);
+		g_print ("%s: %s = %s\n", name, pspec->name, str);
+		g_free (name);
+		g_free (str);
+		g_value_unset (&value);
+	} else {
+		name = gst_object_get_path_string (orig);
+		g_warning ("Parameter %s not readable in %s.", pspec->name, name);
+		g_free (name);
+	}
+
+}
+
 void *record_video(void *ptr) {
 
 	PIPELINE_OPTS_t *opts = (PIPELINE_OPTS_t *)ptr;
@@ -146,6 +188,9 @@ void *record_video(void *ptr) {
 
 	bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
 	gst_bus_add_watch (bus, bus_call, loop);
+
+	//g_signal_connect(pipeline, "deep_notify", G_CALLBACK(gst_object_default_deep_notify), NULL);
+
 	gst_object_unref (bus);
 
 	g_main_loop_run (loop);

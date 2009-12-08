@@ -59,6 +59,6 @@ void get_timestamp_string(char* timestamp) {
 	time_value = time(NULL);
 	now = localtime(&time_value);
 
-	sprintf(timestamp, "%d%.2d%.2d%.2d%.2d%.2d", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+	sprintf(timestamp, "%d-%.2d-%.2d_%.2d%.2d%.2d", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 
 }

@@ -157,7 +157,7 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 	opts->audio_sampling_rate	= audio_sampling_rate?atoi(audio_sampling_rate->child->text):22050;
 	opts->audio_encoding		= audio_encoding?atoi(audio_encoding->child->text):AUDIO_ENCODING_AAC;
 	opts->aac_stream_bitrate	= aac_stream_bitrate?atoi(aac_stream_bitrate->child->text):128000;
-	opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_5;
+	opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_0;
 
 	opts->muxer_streams			= muxer_streams?atoi(muxer_streams->child->text):MUXER_STREAMS_BOTH;
 
