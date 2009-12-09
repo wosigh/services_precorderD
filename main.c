@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <dirent.h>
 
 #include "precorderD.h"
 #include "gstreamer.h"
@@ -78,18 +77,14 @@ int getopts(int argc, char *argv[]) {
 void cleanup() {
 
 	chdir("/tmp");
-
-	struct dirent *d;
-	DIR *dir = opendir(tmpDir);
-	char file[PATH_MAX];
-	while(d = readdir(dir)) {
-		sprintf(file, "%s/%s", tmpDir, d->d_name);
-		remove(file);
-	}
-	closedir(dir);
-	remove(tmpDir);
-
+	remove_dir(tmpDir);
 	free(tmpDir);
+
+	int removed = 0;
+	clean_dir(DEFAULT_FILE_LOCATION, removed);
+	if (removed)
+		printf("Removed %d 0-length files from %s", removed, DEFAULT_FILE_LOCATION);
+
 }
 
 void sighandler(int sig) {

@@ -25,4 +25,6 @@ bool make_sure_dir_exists(char *path);
 
 void get_timestamp_string(char* timestamp);
 
+int remove_dir(char *path);
+
 #endif /* MISC_H_ */

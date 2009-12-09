@@ -50,7 +50,12 @@ bool make_sure_dir_exists(char *path) {
 
 }
 
-void get_timestamp_string(char* timestamp) {
+/*!
+ * \brief Create a timestamp in the form 'YYYY-MM-DD_hhmmss'.
+ *
+ * \param timestamp A string to hold the timestamp.
+ */
+void get_timestamp_string(char *timestamp) {
 
 	struct tm *now = NULL;
 	int hour = 0;
@@ -61,4 +66,54 @@ void get_timestamp_string(char* timestamp) {
 
 	sprintf(timestamp, "%d-%.2d-%.2d_%.2d%.2d%.2d", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 
+}
+
+/*!
+ * \brief Remove a directory and all the files in it.
+ *
+ *
+ * \param path The path to the directory to be removed.
+ *
+ * \return 0 on success, -1 on error
+ */
+int remove_dir(char *path) {
+	struct dirent *d;
+	DIR *dir = opendir(path);
+	char file[PATH_MAX];
+	while(d = readdir(dir)) {
+		sprintf(file, "%s/%s", path, d->d_name);
+		remove(file);
+	}
+	closedir(dir);
+	return remove(path);
+}
+
+/*!
+ * \brief Remove 0-length files in a directory.
+ *
+ *
+ * \param path The path of the directory to be cleaned of 0-length files.
+ * \param removed The number of files removed.
+ *
+ * \return 0 for success, -1 if an error removing a file occurred.
+ *
+ */
+int clean_dir(char *path, int removed) {
+	int ret = 0;
+	removed = 0;
+	struct dirent *d;
+	DIR *dir = opendir(path);
+	char file[PATH_MAX];
+	while(d = readdir(dir)) {
+		sprintf(file, "%s/%s", path, d->d_name);
+		struct stat st;
+		stat(file, &st);
+		if (S_ISREG(st.st_mode) && st.st_size==0) {
+			if (remove(file)==0)
+				removed++;
+			else ret = -1;
+		}
+	}
+	closedir(dir);
+	return ret;
 }
