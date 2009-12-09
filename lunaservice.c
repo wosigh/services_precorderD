@@ -179,7 +179,7 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
 	req->opts->data_throughput		= data_throughput?atoi(data_throughput->child->text):1;
 
-	req->opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):300;
+	req->opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):-1;
 	req->opts->video_format			= video_format?atoi(video_format->child->text):VIDEO_FORMAT_H264;
 	req->opts->video_bitrate		= video_bitrate?atoi(video_bitrate->child->text):64000;
 
@@ -200,6 +200,21 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 }
 
 bool stop_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
+
+	LSError lserror;
+	LSErrorInit(&lserror);
+
+	bool ret = stop_recording();
+
+	if (ret)
+		LSMessageReply(lshandle, message, "{\"returnValue\":true}", &lserror);
+	else
+		LSMessageReply(lshandle, message, "{\"returnValue\":false}", &lserror);
+
+	if (LSErrorIsSet(&lserror)) {
+		LSErrorPrint(&lserror, stderr);
+		LSErrorFree(&lserror);
+	}
 
 	return TRUE;
 

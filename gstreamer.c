@@ -22,6 +22,8 @@
 #include "gstreamer.h"
 #include "luna.h"
 
+GstElement *pipeline;
+
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 
 	bool quit_recording_loop = FALSE;
@@ -164,7 +166,7 @@ int record_video(PIPELINE_OPTS_t *opts) {
 
 	int ret = -1;
 
-	GstElement *pipeline, *vsrc, *asrc, *venc, *aenc, *vqueue, *aqueue, *muxer;
+	GstElement *vsrc, *asrc, *venc, *aenc, *vqueue, *aqueue, *muxer;
 	GstCaps *vcaps, *acaps;
 	GstBus *bus;
 
@@ -261,5 +263,11 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	ret = 0;
 
 	return ret;
+
+}
+
+bool stop_recording() {
+
+	return gst_element_send_event(pipeline, gst_event_new_eos());
 
 }

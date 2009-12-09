@@ -94,5 +94,6 @@ typedef struct {
 GMainLoop *recording_loop;
 
 int record_video(PIPELINE_OPTS_t *opts);
+bool stop_recording();
 
 #endif /* GSTREAMER_H_ */
