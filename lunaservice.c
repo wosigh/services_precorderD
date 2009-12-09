@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+
 #include <lunaservice.h>
 
 #include "gstreamer.h"
@@ -30,6 +31,45 @@
 LSPalmService *serviceHandle;
 LSHandle *priv_bus;
 LSHandle *pub_bus;
+
+pthread_mutex_t recording_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct {
+	PIPELINE_OPTS_t *opts;
+	LSMessage		*message;
+} RECORD_REQUEST_t;
+
+void *record_video_wrapper(void *ptr) {
+
+	RECORD_REQUEST_t *req = (RECORD_REQUEST_t *)ptr;
+
+	LSError lserror;
+	LSErrorInit(&lserror);
+
+	if (pthread_mutex_trylock(&recording_mutex)==0) {
+
+		int ret = record_video(req->opts);
+
+		pthread_mutex_unlock(&recording_mutex);
+
+		if (ret==0)
+			LSMessageReply(pub_bus, req->message, "{\"returnValue\":true}", &lserror);
+		else
+			LSMessageReply(pub_bus, req->message, "{\"returnValue\":false}", &lserror);
+		LSMessageUnref(req->message);
+
+	} else
+		LSMessageReply(pub_bus, req->message, "{\"returnValue\":false,\"errorText\":\"Could not aquire mutex lock. Recording in progress.\"}", &lserror);
+
+	if (LSErrorIsSet(&lserror)) {
+		LSErrorPrint(&lserror, stderr);
+		LSErrorFree(&lserror);
+	}
+
+	free(req->opts);
+	free(req);
+
+}
 
 bool set_led(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
@@ -118,10 +158,11 @@ bool set_led(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
 bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
-	PIPELINE_OPTS_t *opts =  malloc(sizeof(PIPELINE_OPTS_t));
+	LSMessageRef(message);
 
-	LSError lserror;
-	LSErrorInit(&lserror);
+	RECORD_REQUEST_t *req = malloc(sizeof(RECORD_REQUEST_t));
+	req->opts = malloc(sizeof(PIPELINE_OPTS_t));
+	req->message = message;
 
 	json_t *root = json_parse_document(LSMessageGetPayload(message));
 
@@ -136,9 +177,9 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 	json_t *muxer_flavor			= json_find_first_label(root, "muxer_flavor");
 	json_t *muxer_streams			= json_find_first_label(root, "muxer_streams");
 
-	opts->muxer_flavor = muxer_flavor?atoi(muxer_flavor->child->text):MUXING_FLAVOR_QUICKTIME;
+	req->opts->muxer_flavor = muxer_flavor?atoi(muxer_flavor->child->text):MUXING_FLAVOR_QUICKTIME;
 	char *extension;
-	if (opts->muxer_flavor)
+	if (req->opts->muxer_flavor)
 		extension = "mp4";
 	else
 		extension = "3gp";
@@ -146,35 +187,25 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 	char timestamp[16];
 	get_timestamp_string(timestamp);
 
-	sprintf(opts->file, "%s/precorder_%s.%s", DEFAULT_FILE_LOCATION, timestamp, extension);
+	sprintf(req->opts->file, "%s/precorder_%s.%s", DEFAULT_FILE_LOCATION, timestamp, extension);
 
-	opts->data_throughput		= data_throughput?atoi(data_throughput->child->text):1;
+	req->opts->data_throughput		= data_throughput?atoi(data_throughput->child->text):1;
 
-	opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):150;
-	opts->video_format			= video_format?atoi(video_format->child->text):VIDEO_FORMAT_H264;
-	opts->video_bitrate			= video_bitrate?atoi(video_bitrate->child->text):64000;
+	req->opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):300;
+	req->opts->video_format			= video_format?atoi(video_format->child->text):VIDEO_FORMAT_H264;
+	req->opts->video_bitrate		= video_bitrate?atoi(video_bitrate->child->text):64000;
 
-	opts->audio_sampling_rate	= audio_sampling_rate?atoi(audio_sampling_rate->child->text):22050;
-	opts->audio_encoding		= audio_encoding?atoi(audio_encoding->child->text):AUDIO_ENCODING_AAC;
-	opts->aac_stream_bitrate	= aac_stream_bitrate?atoi(aac_stream_bitrate->child->text):128000;
-	opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_0;
+	req->opts->audio_sampling_rate	= audio_sampling_rate?atoi(audio_sampling_rate->child->text):22050;
+	req->opts->audio_encoding		= audio_encoding?atoi(audio_encoding->child->text):AUDIO_ENCODING_AAC;
+	req->opts->aac_stream_bitrate	= aac_stream_bitrate?atoi(aac_stream_bitrate->child->text):128000;
+	req->opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_0;
 
-	opts->muxer_streams			= muxer_streams?atoi(muxer_streams->child->text):MUXER_STREAMS_BOTH;
+	req->opts->muxer_streams		= muxer_streams?atoi(muxer_streams->child->text):MUXER_STREAMS_BOTH;
 
 	json_free_value(&root);
 
 	pthread_t record_thread;
-	pthread_create(&record_thread, NULL, record_video, opts);
-
-	//pthread_join(record_thread, NULL);
-
-	LSMessageReply(lshandle, message, "{\"returnValue\":true}", &lserror);
-
-	end:
-	if (LSErrorIsSet(&lserror)) {
-		LSErrorPrint(&lserror, stderr);
-		LSErrorFree(&lserror);
-	}
+	pthread_create(&record_thread, NULL, record_video_wrapper, req);
 
 	return TRUE;
 

@@ -21,6 +21,8 @@
 
 #include <limits.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <glib.h>
 
 /*!
  * \brief Possible video formats for the
@@ -89,6 +91,8 @@ typedef struct {
 
 } PIPELINE_OPTS_t;
 
-void *record_video(void *ptr);
+GMainLoop *recording_loop;
+
+int record_video(PIPELINE_OPTS_t *opts);
 
 #endif /* GSTREAMER_H_ */

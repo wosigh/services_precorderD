@@ -23,8 +23,6 @@
 
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
 
-	GMainLoop *loop = (GMainLoop *)data;
-
 	switch (GST_MESSAGE_TYPE (msg)) {
 
 	case GST_MESSAGE_NEW_CLOCK: {
@@ -36,7 +34,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
 
 	case GST_MESSAGE_EOS:
 		g_print("End of stream\n");
-		g_main_loop_quit (loop);
+		g_main_loop_quit(recording_loop);
 		break;
 
 	case GST_MESSAGE_ERROR: {
@@ -49,11 +47,45 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
 		g_printerr("Error: %s\n", error->message);
 		g_error_free(error);
 
-		g_main_loop_quit (loop);
+		g_main_loop_quit(recording_loop);
 		break;
 	}
 	default:
 		break;
+	}
+
+	return TRUE;
+
+}
+
+static gboolean bus_call2(GstBus *bus, GstMessage *msg, gpointer data) {
+
+	switch (GST_MESSAGE_TYPE(msg)) {
+
+	case GST_MESSAGE_UNKNOWN: 			g_print(">>>> GST_MESSAGE_UNKNOWN\n"); break;
+	case GST_MESSAGE_EOS: 				g_print(">>>> GST_MESSAGE_EOS\n"); break;
+	case GST_MESSAGE_ERROR:				g_print(">>>> GST_MESSAGE_ERROR\n"); break;
+	case GST_MESSAGE_WARNING:			g_print(">>>> GST_MESSAGE_WARNING\n"); break;
+	case GST_MESSAGE_INFO:				g_print(">>>> GST_MESSAGE_INFO\n"); break;
+	case GST_MESSAGE_TAG:				g_print(">>>> GST_MESSAGE_TAG\n"); break;
+	case GST_MESSAGE_BUFFERING:			g_print(">>>> GST_MESSAGE_BUFFERING\n"); break;
+	case GST_MESSAGE_STATE_CHANGED:		g_print(">>>> GST_MESSAGE_STATE_CHANGED\n"); break;
+	case GST_MESSAGE_STATE_DIRTY:		g_print(">>>> GST_MESSAGE_STATE_DIRTY\n"); break;
+	case GST_MESSAGE_STEP_DONE:			g_print(">>>> GST_MESSAGE_STEP_DONE\n"); break;
+	case GST_MESSAGE_CLOCK_PROVIDE:		g_print(">>>> GST_MESSAGE_CLOCK_PROVIDE\n"); break;
+	case GST_MESSAGE_CLOCK_LOST:		g_print(">>>> GST_MESSAGE_CLOCK_LOST\n"); break;
+	case GST_MESSAGE_NEW_CLOCK:			g_print(">>>> GST_MESSAGE_NEW_CLOCK\n"); break;
+	case GST_MESSAGE_STRUCTURE_CHANGE:	g_print(">>>> GST_MESSAGE_STRUCTURE_CHANGE\n"); break;
+	case GST_MESSAGE_STREAM_STATUS: 	g_print(">>>> GST_MESSAGE_STREAM_STATUS\n"); break;
+	case GST_MESSAGE_APPLICATION:		g_print(">>>> GST_MESSAGE_APPLICATION\n"); g_main_loop_quit(recording_loop); break;
+	case GST_MESSAGE_ELEMENT:			g_print(">>>> GST_MESSAGE_ELEMENT\n"); break;
+	case GST_MESSAGE_SEGMENT_START:		g_print(">>>> GST_MESSAGE_SEGMENT_START\n"); break;
+	case GST_MESSAGE_SEGMENT_DONE:		g_print(">>>> GST_MESSAGE_SEGMENT_DONE\n"); break;
+	case GST_MESSAGE_DURATION:			g_print(">>>> GST_MESSAGE_DURATION\n"); break;
+	case GST_MESSAGE_LATENCY: 			g_print(">>>> GST_MESSAGE_LATENCY\n"); break;
+	case GST_MESSAGE_ASYNC_START:		g_print(">>>> GST_MESSAGE_ASYNC_START\n"); break;
+	case GST_MESSAGE_ASYNC_DONE:		g_print(">>>> GST_MESSAGE_ASYNC_DONE\n"); break;
+
 	}
 
 	return TRUE;
@@ -102,11 +134,9 @@ void gst_object_deep_notify(GObject *object, GstObject *orig, GParamSpec *pspec,
 
 }
 
-void *record_video(void *ptr) {
+int record_video(PIPELINE_OPTS_t *opts) {
 
-	PIPELINE_OPTS_t *opts = (PIPELINE_OPTS_t *)ptr;
-
-	GMainLoop *loop;
+	int ret = -1;
 
 	GstElement *pipeline, *vsrc, *asrc, *venc, *aenc, *vqueue, *aqueue, *muxer;
 	GstCaps *vcaps, *acaps;
@@ -114,7 +144,7 @@ void *record_video(void *ptr) {
 
 	gst_init(NULL, NULL);
 
-	loop = g_main_loop_new(NULL, FALSE);
+	recording_loop = g_main_loop_new(NULL, FALSE);
 
 	// Create pipeline
 	pipeline = gst_pipeline_new("precorder");
@@ -122,6 +152,9 @@ void *record_video(void *ptr) {
 	// Setup video source
 	vsrc = gst_element_factory_make("camsrc", "video-source");
 	g_object_set(G_OBJECT(vsrc), "num-buffers", opts->num_buffers, NULL);
+	g_object_set(G_OBJECT(vsrc), "queue-size", 6, NULL);
+	g_object_set(G_OBJECT(vsrc), "do-timestamp", 1, NULL);
+	g_object_set(G_OBJECT(vsrc), "typefind", 1, NULL);
 
 	// Setup video queue
 	vqueue = gst_element_factory_make("queue", "video-queue");
@@ -129,7 +162,7 @@ void *record_video(void *ptr) {
 	// Setup video encoder
 	venc = gst_element_factory_make("palmvideoencoder", "video-encoder");
 	g_object_set(G_OBJECT(venc), "videoformat", opts->video_format, NULL);
-	g_object_set(G_OBJECT(venc), "enable", opts->data_throughput, NULL);
+	//g_object_set(G_OBJECT(venc), "enable", opts->data_throughput, NULL);
 
 	// Setup audio source
 	asrc = gst_element_factory_make("alsasrc", "audio-source");
@@ -186,17 +219,21 @@ void *record_video(void *ptr) {
 
 	gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-	bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
-	gst_bus_add_watch (bus, bus_call, loop);
+	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
+	gst_bus_add_watch(bus, bus_call2, recording_loop);
 
-	//g_signal_connect(pipeline, "deep_notify", G_CALLBACK(gst_object_default_deep_notify), NULL);
+	g_signal_connect(pipeline, "deep_notify", G_CALLBACK(gst_object_default_deep_notify), NULL);
 
-	gst_object_unref (bus);
+	gst_object_unref(bus);
 
-	g_main_loop_run (loop);
+	g_main_loop_run(recording_loop);
 
 	gst_element_set_state (pipeline, GST_STATE_NULL);
 
 	gst_object_unref (GST_OBJECT (pipeline));
+
+	ret = 0;
+
+	return ret;
 
 }
