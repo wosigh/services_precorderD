@@ -20,73 +20,99 @@
 #include <gst/gst.h>
 
 #include "gstreamer.h"
+#include "luna.h"
 
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data) {
+static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 
-	switch (GST_MESSAGE_TYPE (msg)) {
+	bool quit_recording_loop = FALSE;
 
-	case GST_MESSAGE_NEW_CLOCK: {
-		GstClock *clock;
-		gst_message_parse_new_clock (msg, &clock);
-		g_print("New clock: %s\n", (clock ? GST_OBJECT_NAME (clock) : "NULL"));
+	int len = 0;
+	char *message = 0;
+
+	int message_type = GST_MESSAGE_TYPE(msg);
+
+	switch (message_type) {
+
+	case GST_MESSAGE_UNKNOWN:
 		break;
-	}
-
 	case GST_MESSAGE_EOS:
-		g_print("End of stream\n");
-		g_main_loop_quit(recording_loop);
 		break;
-
 	case GST_MESSAGE_ERROR: {
 		gchar *debug;
 		GError *error;
-
 		gst_message_parse_error(msg, &error, &debug);
 		g_free(debug);
-
-		g_printerr("Error: %s\n", error->message);
+		asprintf(&message, "Error: %s", error->message);
 		g_error_free(error);
+		break;
+	}
+	case GST_MESSAGE_WARNING:
+		break;
+	case GST_MESSAGE_INFO:
+		break;
+	case GST_MESSAGE_TAG:
+		break;
+	case GST_MESSAGE_BUFFERING:
+		break;
+	case GST_MESSAGE_STATE_CHANGED: {
+		GstState *oldState, *newState, *pendingState;
+		gst_message_parse_state_changed(msg, oldState, newState, pendingState);
+		asprintf(&message, "Old state: %d, New state: %d, Pending state: %d", oldState, newState, pendingState);
+		break;
+	}
+	case GST_MESSAGE_STATE_DIRTY:
+		break;
+	case GST_MESSAGE_STEP_DONE:
+		break;
+	case GST_MESSAGE_CLOCK_PROVIDE: {
+		GstClock *clock;
+		gboolean *ready;
+		gst_message_parse_clock_provide(msg, &clock, ready);
+		asprintf(&message, "Provide clock: %s, Ready: %d", (clock ? GST_OBJECT_NAME(clock) : "NULL"), ready);
+		break;
+	}
+	case GST_MESSAGE_CLOCK_LOST: {
+		GstClock *clock;
+		gst_message_parse_clock_lost(msg, &clock);
+		asprintf(&message, "Lost clock: %s", (clock ? GST_OBJECT_NAME(clock) : "NULL"));
+		break;
+	}
+	case GST_MESSAGE_NEW_CLOCK: {
+		GstClock *clock;
+		gst_message_parse_new_clock(msg, &clock);
+		asprintf(&message, "New clock: %s", (clock ? GST_OBJECT_NAME(clock) : "NULL"));
+		break;
+	}
+	case GST_MESSAGE_STRUCTURE_CHANGE:
+		break;
+	case GST_MESSAGE_STREAM_STATUS:
+		break;
+	case GST_MESSAGE_APPLICATION:
+		quit_recording_loop = TRUE;
+		break;
+	case GST_MESSAGE_ELEMENT:
+		break;
+	case GST_MESSAGE_SEGMENT_START:
+		break;
+	case GST_MESSAGE_SEGMENT_DONE:
+		break;
+	case GST_MESSAGE_DURATION:
+		break;
+	case GST_MESSAGE_LATENCY:
+		break;
+	case GST_MESSAGE_ASYNC_START:
+		break;
+	case GST_MESSAGE_ASYNC_DONE:
+		break;
 
+	}
+
+	respond_to_gst_event(message_type, message);
+
+	if (quit_recording_loop)
 		g_main_loop_quit(recording_loop);
-		break;
-	}
-	default:
-		break;
-	}
 
-	return TRUE;
-
-}
-
-static gboolean bus_call2(GstBus *bus, GstMessage *msg, gpointer data) {
-
-	switch (GST_MESSAGE_TYPE(msg)) {
-
-	case GST_MESSAGE_UNKNOWN: 			g_print(">>>> GST_MESSAGE_UNKNOWN\n"); break;
-	case GST_MESSAGE_EOS: 				g_print(">>>> GST_MESSAGE_EOS\n"); break;
-	case GST_MESSAGE_ERROR:				g_print(">>>> GST_MESSAGE_ERROR\n"); break;
-	case GST_MESSAGE_WARNING:			g_print(">>>> GST_MESSAGE_WARNING\n"); break;
-	case GST_MESSAGE_INFO:				g_print(">>>> GST_MESSAGE_INFO\n"); break;
-	case GST_MESSAGE_TAG:				g_print(">>>> GST_MESSAGE_TAG\n"); break;
-	case GST_MESSAGE_BUFFERING:			g_print(">>>> GST_MESSAGE_BUFFERING\n"); break;
-	case GST_MESSAGE_STATE_CHANGED:		g_print(">>>> GST_MESSAGE_STATE_CHANGED\n"); break;
-	case GST_MESSAGE_STATE_DIRTY:		g_print(">>>> GST_MESSAGE_STATE_DIRTY\n"); break;
-	case GST_MESSAGE_STEP_DONE:			g_print(">>>> GST_MESSAGE_STEP_DONE\n"); break;
-	case GST_MESSAGE_CLOCK_PROVIDE:		g_print(">>>> GST_MESSAGE_CLOCK_PROVIDE\n"); break;
-	case GST_MESSAGE_CLOCK_LOST:		g_print(">>>> GST_MESSAGE_CLOCK_LOST\n"); break;
-	case GST_MESSAGE_NEW_CLOCK:			g_print(">>>> GST_MESSAGE_NEW_CLOCK\n"); break;
-	case GST_MESSAGE_STRUCTURE_CHANGE:	g_print(">>>> GST_MESSAGE_STRUCTURE_CHANGE\n"); break;
-	case GST_MESSAGE_STREAM_STATUS: 	g_print(">>>> GST_MESSAGE_STREAM_STATUS\n"); break;
-	case GST_MESSAGE_APPLICATION:		g_print(">>>> GST_MESSAGE_APPLICATION\n"); g_main_loop_quit(recording_loop); break;
-	case GST_MESSAGE_ELEMENT:			g_print(">>>> GST_MESSAGE_ELEMENT\n"); break;
-	case GST_MESSAGE_SEGMENT_START:		g_print(">>>> GST_MESSAGE_SEGMENT_START\n"); break;
-	case GST_MESSAGE_SEGMENT_DONE:		g_print(">>>> GST_MESSAGE_SEGMENT_DONE\n"); break;
-	case GST_MESSAGE_DURATION:			g_print(">>>> GST_MESSAGE_DURATION\n"); break;
-	case GST_MESSAGE_LATENCY: 			g_print(">>>> GST_MESSAGE_LATENCY\n"); break;
-	case GST_MESSAGE_ASYNC_START:		g_print(">>>> GST_MESSAGE_ASYNC_START\n"); break;
-	case GST_MESSAGE_ASYNC_DONE:		g_print(">>>> GST_MESSAGE_ASYNC_DONE\n"); break;
-
-	}
+	if (message) free(message);
 
 	return TRUE;
 
@@ -220,9 +246,9 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
 	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
-	gst_bus_add_watch(bus, bus_call2, recording_loop);
+	gst_bus_add_watch(bus, bus_call, recording_loop);
 
-	g_signal_connect(pipeline, "deep_notify", G_CALLBACK(gst_object_default_deep_notify), NULL);
+	//g_signal_connect(pipeline, "deep_notify", G_CALLBACK(gst_object_default_deep_notify), NULL);
 
 	gst_object_unref(bus);
 

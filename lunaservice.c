@@ -20,24 +20,12 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include <lunaservice.h>
-
 #include "precorderD.h"
 #include "gstreamer.h"
 #include "TPS6105X.h"
-
-#define SERVICE_URI				"us.ryanhope.precorderD"
-
-LSPalmService *serviceHandle;
-LSHandle *priv_bus;
-LSHandle *pub_bus;
+#include "luna.h"
 
 pthread_mutex_t recording_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-typedef struct {
-	PIPELINE_OPTS_t *opts;
-	LSMessage		*message;
-} RECORD_REQUEST_t;
 
 void *record_video_wrapper(void *ptr) {
 
@@ -151,7 +139,7 @@ bool set_led(LSHandle* lshandle, LSMessage *message, void *ctx) {
 		LSErrorPrint(&lserror, stderr);
 		LSErrorFree(&lserror);
 	}
-\
+
 	return TRUE;
 
 }
@@ -211,10 +199,38 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
 }
 
+bool stop_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
+
+	return TRUE;
+
+}
+
+
+bool get_events(LSHandle* lshandle, LSMessage *message, void *ctx) {
+
+	LSError lserror;
+	LSErrorInit(&lserror);
+
+	bool subscribed = false;
+	LSSubscriptionProcess(lshandle, message, &subscribed, &lserror);
+
+	if (!subscribed)
+		LSMessageReply(lshandle, message, "{\"returnValue\":false,\"errorText\":\"Requires subscription.\"}", &lserror);
+
+	if (LSErrorIsSet(&lserror)) {
+		LSErrorPrint(&lserror, stderr);
+		LSErrorFree(&lserror);
+	}
+
+	return TRUE;
+
+}
+
 LSMethod methods[] = {
 		{"set_led",			set_led},
 		{"start_record",	start_record},
-		//{"stop_record",		stop_record},
+		{"stop_record",		stop_record},
+		{"get_events",		get_events},
 		{0,0}
 };
 
@@ -233,6 +249,25 @@ void start_service() {
 	pub_bus = LSPalmServiceGetPublicConnection(serviceHandle);
 
 	g_main_loop_run(loop);
+
+	if (LSErrorIsSet(&lserror)) {
+		LSErrorPrint(&lserror, stderr);
+		LSErrorFree(&lserror);
+	}
+
+}
+
+void respond_to_gst_event(int message_type, char *message) {
+
+	LSError lserror;
+	LSErrorInit(&lserror);
+
+	int len = 0;
+	char *jsonResponse = 0;
+
+	len = asprintf(&jsonResponse, "{\"gst_message_type\":%d,\"message\":\"%s\"}", message_type, message);
+
+	LSSubscriptionRespond(serviceHandle, "/get_events", jsonResponse, &lserror);
 
 	if (LSErrorIsSet(&lserror)) {
 		LSErrorPrint(&lserror, stderr);
