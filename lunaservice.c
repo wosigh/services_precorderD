@@ -22,11 +22,11 @@
 
 #include <lunaservice.h>
 
+#include "precorderD.h"
 #include "gstreamer.h"
 #include "TPS6105X.h"
 
 #define SERVICE_URI				"us.ryanhope.precorderD"
-#define DEFAULT_FILE_LOCATION	"/media/internal/video"
 
 LSPalmService *serviceHandle;
 LSHandle *priv_bus;
@@ -151,7 +151,7 @@ bool set_led(LSHandle* lshandle, LSMessage *message, void *ctx) {
 		LSErrorPrint(&lserror, stderr);
 		LSErrorFree(&lserror);
 	}
-
+\
 	return TRUE;
 
 }

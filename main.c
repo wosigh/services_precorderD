@@ -24,6 +24,7 @@
 #include <string.h>
 #include <dirent.h>
 
+#include "precorderD.h"
 #include "gstreamer.h"
 #include "misc.h"
 
@@ -101,6 +102,11 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sighandler);
 	signal(SIGTERM, sighandler);
 	signal(SIGQUIT, sighandler);
+
+	if (!make_sure_dir_exists(DEFAULT_FILE_LOCATION)) {
+		printf("Directory error: %s\n", DEFAULT_FILE_LOCATION);
+		return 1;
+	}
 
 	char template[] = "/tmp/precorder.XXXXXX";
 	tmpDir = strdup(mkdtemp(template));
