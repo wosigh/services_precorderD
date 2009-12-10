@@ -52,8 +52,14 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 		break;
 	case GST_MESSAGE_INFO:
 		break;
-	case GST_MESSAGE_TAG:
+	case GST_MESSAGE_TAG: {
+		int idx = 0;
+		GstTagList *taglist;
+		gst_message_parse_tag(msg, &taglist);
+		asprintf(&message, "%s", gst_structure_to_string(taglist));
+		gst_tag_list_free(taglist);
 		break;
+	}
 	case GST_MESSAGE_BUFFERING:
 		break;
 	case GST_MESSAGE_STATE_CHANGED: {
@@ -90,7 +96,8 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 	case GST_MESSAGE_STREAM_STATUS:
 		break;
 	case GST_MESSAGE_APPLICATION:
-		quit_recording_loop = TRUE;
+		if (message_type==16384)
+			quit_recording_loop = TRUE;
 		break;
 	case GST_MESSAGE_ELEMENT:
 		break;
@@ -190,7 +197,7 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	// Setup video encoder
 	venc = gst_element_factory_make("palmvideoencoder", "video-encoder");
 	g_object_set(G_OBJECT(venc), "videoformat", opts->video_format, NULL);
-	//g_object_set(G_OBJECT(venc), "enable", opts->data_throughput, NULL);
+	g_object_set(G_OBJECT(venc), "enable", opts->data_throughput, NULL);
 
 	// Setup audio source
 	asrc = gst_element_factory_make("alsasrc", "audio-source");
@@ -256,9 +263,9 @@ int record_video(PIPELINE_OPTS_t *opts) {
 
 	g_main_loop_run(recording_loop);
 
-	gst_element_set_state (pipeline, GST_STATE_NULL);
+	gst_element_set_state(pipeline, GST_STATE_NULL);
 
-	gst_object_unref (GST_OBJECT (pipeline));
+	gst_object_unref(GST_OBJECT (pipeline));
 
 	ret = 0;
 

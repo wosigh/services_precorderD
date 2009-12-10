@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <sched.h>
 
 #include "precorderD.h"
 #include "gstreamer.h"

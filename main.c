@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <sched.h>
 
 #include "precorderD.h"
 #include "gstreamer.h"
@@ -109,6 +110,10 @@ int main(int argc, char *argv[]) {
 
 	if (getopts(argc, argv) == 1)
 		return 1;
+
+	struct sched_param sp;
+	sp.sched_priority = sched_get_priority_max(SCHED_RR);
+	sched_setscheduler(getpid(), SCHED_RR, &sp);
 
 	start_service();
 
