@@ -192,7 +192,7 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	g_object_set(G_OBJECT(vsrc), "typefind", 1, NULL);
 
 	// Setup video queue
-	vqueue = gst_element_factory_make("queue", "video-queue");
+	vqueue = gst_element_factory_make("queue2", "video-queue");
 
 	// Setup video encoder
 	venc = gst_element_factory_make("palmvideoencoder", "video-encoder");
@@ -204,7 +204,7 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	//g_object_set(G_OBJECT(asrc), "slave-method", 0, NULL);
 
 	// Setup audio queue
-	aqueue = gst_element_factory_make("queue", "audio-queue");
+	aqueue = gst_element_factory_make("queue2", "audio-queue");
 
 	// Setup audio encoder
 	aenc = gst_element_factory_make("palmaudioencoder", "audio-encoder");
