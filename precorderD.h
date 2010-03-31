@@ -19,6 +19,6 @@
 #ifndef PRECORDERD_H_
 #define PRECORDERD_H_
 
-#define DEFAULT_FILE_LOCATION	"/media/internal/video"
+#define DEFAULT_FILE_LOCATION	"/media/internal/recordings"
 
 #endif /* PRECORDERD_H_ */

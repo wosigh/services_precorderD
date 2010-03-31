@@ -48,7 +48,7 @@ void *record_video_wrapper(void *ptr) {
 		LSMessageUnref(req->message);
 
 	} else
-		LSMessageReply(pub_bus, req->message, "{\"returnValue\":false,\"errorText\":\"Could not aquire mutex lock. Recording in progress.\"}", &lserror);
+		LSMessageReply(pub_bus, req->message, "{\"returnValue\":false,\"errorText\":\"Could not acquire mutex lock. Recording in progress.\"}", &lserror);
 
 	if (LSErrorIsSet(&lserror)) {
 		LSErrorPrint(&lserror, stderr);
@@ -160,41 +160,42 @@ bool start_record(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
 	json_t *root = json_parse_document(LSMessageGetPayload(message));
 
-	json_t *data_throughput			= json_find_first_label(root, "data_throughput");
-	json_t *num_buffers				= json_find_first_label(root, "num_buffers");
-	json_t *video_format			= json_find_first_label(root, "video_format");
-	json_t *video_bitrate			= json_find_first_label(root, "video_bitrate");
-	json_t *audio_sampling_rate		= json_find_first_label(root, "audio_sampling_rate");
-	json_t *audio_encoding			= json_find_first_label(root, "audio_encoding");
-	json_t *aac_stream_bitrate		= json_find_first_label(root, "aac_stream_bitrate");
-	json_t *aac_encoding_quality	= json_find_first_label(root, "aac_encoding_quality");
-	json_t *muxer_flavor			= json_find_first_label(root, "muxer_flavor");
-	json_t *muxer_streams			= json_find_first_label(root, "muxer_streams");
+	json_t *source_device			= json_find_first_label(root, "source_device");
+	json_t *stream_rate				= json_find_first_label(root, "stream_rate");
+	json_t *channels				= json_find_first_label(root, "channels");
+	json_t *endianness				= json_find_first_label(root, "endianness");
+	json_t *width					= json_find_first_label(root, "width");
+	json_t *depth					= json_find_first_label(root, "depth");
+	json_t *lame_bitrate			= json_find_first_label(root, "lame_bitrate");
+	json_t *lame_quality			= json_find_first_label(root, "lame_quality");
+	json_t *filename				= json_find_first_label(root, "filename");
+	json_t *voice_activation		= json_find_first_label(root, "voice_activation");
 
-	req->opts->muxer_flavor = muxer_flavor?atoi(muxer_flavor->child->text):MUXING_FLAVOR_QUICKTIME;
 	char *extension;
-	if (req->opts->muxer_flavor)
-		extension = "mp4";
-	else
-		extension = "3gp";
+	extension = "mp3";
 
 	char timestamp[16];
 	get_timestamp_string(timestamp);
 
-	sprintf(req->opts->file, "%s/precorder_%s.%s", DEFAULT_FILE_LOCATION, timestamp, extension);
+	if (!filename) {
+		sprintf(req->opts->file, "%s/precorder_%s.%s", DEFAULT_FILE_LOCATION, timestamp, extension);
+	}
+	else {
+		sprintf(req->opts->file, "%s/%s.%s", DEFAULT_FILE_LOCATION, filename, extension);
+	}
 
-	req->opts->data_throughput		= data_throughput?atoi(data_throughput->child->text):1;
+	req->opts->source_device		= source_device?atoi(source_device->child->text):SOURCE_DEVICE_MIC;
 
-	req->opts->num_buffers			= num_buffers?atoi(num_buffers->child->text):-1;
-	req->opts->video_format			= video_format?atoi(video_format->child->text):VIDEO_FORMAT_H264;
-	req->opts->video_bitrate		= video_bitrate?atoi(video_bitrate->child->text):64000;
+	req->opts->stream_rate			= stream_rate?atoi(stream_rate->child->text):16000;
+	req->opts->channels				= channels?atoi(channels->child->text):1;
+	req->opts->endianness			= endianness?atoi(endianness->child->text):1234;
 
-	req->opts->audio_sampling_rate	= audio_sampling_rate?atoi(audio_sampling_rate->child->text):22050;
-	req->opts->audio_encoding		= audio_encoding?atoi(audio_encoding->child->text):AUDIO_ENCODING_AAC;
-	req->opts->aac_stream_bitrate	= aac_stream_bitrate?atoi(aac_stream_bitrate->child->text):128000;
-	req->opts->aac_encoding_quality	= aac_encoding_quality?atoi(aac_encoding_quality->child->text):AAC_ENCODING_QUALITY_0;
+	req->opts->width				= width?atoi(width->child->text):16;
+	req->opts->depth				= depth?atoi(depth->child->text):16;
+	req->opts->lame_bitrate			= lame_bitrate?atoi(lame_bitrate->child->text):96;
+	req->opts->lame_quality			= lame_quality?atoi(lame_quality->child->text):6;
 
-	req->opts->muxer_streams		= muxer_streams?atoi(muxer_streams->child->text):MUXER_STREAMS_BOTH;
+	req->opts->voice_activation		= voice_activation?atoi(voice_activation->child->text):VOICE_ACTIVATION_NO;
 
 	json_free_value(&root);
 

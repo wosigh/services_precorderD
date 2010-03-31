@@ -17,12 +17,14 @@
  =============================================================================*/
 
 #include <stdio.h>
+#include <math.h>
 #include <gst/gst.h>
 
 #include "gstreamer.h"
 #include "luna.h"
 
 GstElement *pipeline;
+gdouble rms;
 
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 
@@ -169,13 +171,49 @@ void gst_object_deep_notify(GObject *object, GstObject *orig, GParamSpec *pspec,
 
 }
 
+gboolean message_handler (GstBus * bus, GstMessage * message, gpointer data)
+{
+  // handle only element messages
+  if (message->type == GST_MESSAGE_ELEMENT) {
+    const GstStructure *s = gst_message_get_structure (message);
+    const gchar *name = gst_structure_get_name (s);
+    // handle only level element messages
+    if (strcmp (name, "level") == 0) {
+      gint channels;
+      gdouble rms_dB;
+      const GValue *list;
+      const GValue *value;
+
+      gint i;
+
+      list = gst_structure_get_value (s, "rms");
+      channels = gst_value_list_get_size (list);
+
+      for (i = 0; i < channels; ++i) {
+        list = gst_structure_get_value (s, "rms");
+        value = gst_value_list_get_value (list, i);
+        rms_dB = g_value_get_double (value);
+
+        // normalize rms value, results in range from 0.0 to 1.0
+        rms = pow (10, rms_dB / 20);
+      }
+    }
+  }
+  /* we handled the message we want, and ignored the ones we didn't want.
+   * so the core can unref the message for us */
+  return TRUE;
+}
+
+
+
 int record_video(PIPELINE_OPTS_t *opts) {
 
 	int ret = -1;
 
-	GstElement *vsrc, *asrc, *venc, *aenc, *vqueue, *aqueue, *muxer;
-	GstCaps *vcaps, *acaps;
+	GstElement *psrc, *vact, *aenc, *fsink;
+	GstCaps *acaps;
 	GstBus *bus;
+	extern gdouble rms;
 
 	gst_init(NULL, NULL);
 
@@ -184,75 +222,61 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	// Create pipeline
 	pipeline = gst_pipeline_new("precorder");
 
-	// Setup video source
-	vsrc = gst_element_factory_make("camsrc", "video-source");
-	g_object_set(G_OBJECT(vsrc), "num-buffers", opts->num_buffers, NULL);
-	g_object_set(G_OBJECT(vsrc), "queue-size", 6, NULL);
-	g_object_set(G_OBJECT(vsrc), "do-timestamp", 1, NULL);
-	g_object_set(G_OBJECT(vsrc), "typefind", 1, NULL);
-
-	// Setup video queue
-	vqueue = gst_element_factory_make("queue2", "video-queue");
-
-	// Setup video encoder
-	venc = gst_element_factory_make("palmvideoencoder", "video-encoder");
-	g_object_set(G_OBJECT(venc), "videoformat", opts->video_format, NULL);
-	g_object_set(G_OBJECT(venc), "enable", opts->data_throughput, NULL);
-
-	// Setup audio source
-	asrc = gst_element_factory_make("alsasrc", "audio-source");
-	//g_object_set(G_OBJECT(asrc), "slave-method", 0, NULL);
-
-	// Setup audio queue
-	aqueue = gst_element_factory_make("queue2", "audio-queue");
+	// Setup pulse source
+	psrc = gst_element_factory_make("pulsesrc", "pulse-source");
+	g_object_set(G_OBJECT(psrc), "device", opts->source_device, NULL);
 
 	// Setup audio encoder
-	aenc = gst_element_factory_make("palmaudioencoder", "audio-encoder");
-	g_object_set(G_OBJECT(aenc), "encoding", opts->audio_encoding, NULL);
-	g_object_set(G_OBJECT(aenc), "AACStreamBitrate", opts->aac_stream_bitrate, NULL);
-	g_object_set(G_OBJECT(aenc), "AACEncodingQuality", opts->aac_encoding_quality, NULL);
-	g_object_set(G_OBJECT(aenc), "enable", opts->data_throughput, NULL);
+	aenc = gst_element_factory_make("lame", "audio-encoder");
+	g_object_set(G_OBJECT(aenc), "bitrate", opts->lame_bitrate, NULL);
+	g_object_set(G_OBJECT(aenc), "quality", opts->lame_quality, NULL);
 
-	// Setip muxer
-	muxer = gst_element_factory_make("palmmpeg4mux", "muxer");
-	g_object_set(G_OBJECT(muxer), "location", opts->file, NULL);
-	g_object_set(G_OBJECT(muxer), "QTQCELPMuxing", opts->muxer_flavor, NULL);
-	g_object_set(G_OBJECT(muxer), "StreamMuxSelection", opts->muxer_streams, NULL);
-	g_object_set(G_OBJECT(muxer), "enable", opts->data_throughput, NULL);
+	// Setup file sink
+	fsink = gst_element_factory_make("filesink", "file-sink");
+	g_object_set(G_OBJECT(fsink), "location", opts->file, NULL);
+
+	// Setup voice activation (level checker) and turn on message output
+	vact = gst_element_factory_make("level", "voice-activation");
+	g_object_set (G_OBJECT (vact), "message", TRUE, NULL);
 
 	// Bundle up elements into a bin
-	gst_bin_add_many(GST_BIN(pipeline), vsrc, vqueue, venc, asrc, aqueue, aenc, muxer, NULL);
-
-	// Build video caps
-	vcaps = gst_caps_new_simple(
-			"video/x-raw-yuv",
-			"width",			G_TYPE_INT,			480,
-			"height",			G_TYPE_INT,			320,
-			"framerate",		GST_TYPE_FRACTION,	30, 1,
-			//"format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('U', 'Y', 'V', 'Y'),
-			NULL
-	);
+	gst_bin_add_many(GST_BIN(pipeline), psrc, vact, aenc, fsink, NULL);
 
 	// Build audio caps
 	acaps = gst_caps_new_simple(
 			"audio/x-raw-int",
-			"width",			G_TYPE_INT,		16,
-			"depth",			G_TYPE_INT,		16,
-			"endianness",		G_TYPE_INT,		1234,
-			"rate",				G_TYPE_INT,		opts->audio_sampling_rate,
-			"channels",			G_TYPE_INT,		2,
+			"width",			G_TYPE_INT,		opts->width,
+			"depth",			G_TYPE_INT,		opts->depth,
+			"endianness",		G_TYPE_INT,		opts->endianness,
+			"rate",				G_TYPE_INT,		opts->stream_rate,
+			"channels",			G_TYPE_INT,		opts->channels,
 			"signed",			G_TYPE_BOOLEAN,	TRUE,
 			NULL
 	);
 
 	// Link elements
-	gst_element_link_filtered(asrc, aqueue, acaps);
-	gst_element_link_many(aqueue, aenc, muxer, NULL);
+	gst_element_link_filtered(psrc, vact, aenc);
+	gst_element_link(fsink, NULL);
 
-	gst_element_link(vsrc, venc);
-	gst_element_link_many(venc, muxer, NULL);
+	int state;
+	state = 1;
 
-	gst_element_set_state(pipeline, GST_STATE_PLAYING);
+	if (opts->voice_activation == VOICE_ACTIVATION_YES) {
+		while (gst_app_sink_is_eos() == FALSE) {
+			if ((rms >= 0.2) && (state != 1)) {
+				gst_element_set_state(pipeline, GST_STATE_PLAYING);
+				state = 1;
+			}
+			else if ((rms <= 0.2) && (state != 0)) {
+				gst_element_set_state(pipeline, GST_STATE_PAUSED);
+				state = 0;
+			}
+		}
+	}
+	else {
+		gst_element_set_state(pipeline, GST_STATE_PLAYING);
+	}
+
 
 	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
 	gst_bus_add_watch(bus, bus_call, recording_loop);

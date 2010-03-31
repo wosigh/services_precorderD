@@ -25,69 +25,42 @@
 #include <glib.h>
 
 /*!
- * \brief Possible video formats for the
- * 'palmvideoencoder' gst element
+ * \brief Possible source devices for
+ * 'pulsesrc' gst element
  */
 typedef enum {
-	VIDEO_FORMAT_MPEG4,		//!< MPEG-4
-	VIDEO_FORMAT_H263,		//!< H.263
-	VIDEO_FORMAT_H264,		//!< H.264(AVC)
-} VIDEO_FORMAT_t;
+	SOURCE_DEVICE_MIC,		//!< pcm_input
+	SOURCE_DEVICE_STREAM,	//!< pcm_output.monitor
+} SOURCE_DEVICE_t;
+
+
+
+typedef enum {
+	VOICE_ACTIVATION_YES,	//!< Limit gstlevel
+	VOICE_ACTIVATION_NO,	//!< Unlimit gstlevel
+} VOICE_ACTIVATION_t;
+
 
 /*!
- * \brief Possible audio encoding for the
- * 'palmaudioencoder' gst element
- */
-typedef enum {
-	AUDIO_ENCODING_AAC,		//!< AAC
-	AUDIO_ENCODING_AMRNB,	//!< AMRNB
-	AUDIO_ENCODING_MP3,		//!< MP3
-} AUDIO_ENCODING_t;
-
-/*!
- * \brief Possible AAC encoding quality values for the
- * 'palmaudioencoder' gst element
- */
-typedef enum {
-	AAC_ENCODING_QUALITY_0,		//!< CBR
-	AAC_ENCODING_QUALITY_1,		//!< VBR-1 (lowest)
-	AAC_ENCODING_QUALITY_2,		//!< VBR-2
-	AAC_ENCODING_QUALITY_3,		//!< VBR-3
-	AAC_ENCODING_QUALITY_4,		//!< VBR-4
-	AAC_ENCODING_QUALITY_5,		//!< VBR-5 (highest)
-} AACEncodingQuality_t;
-
-typedef enum {
-	MUXING_FLAVOR_3GP,			//!< 3GP/3G2 QCELP muxing
-	MUXING_FLAVOR_QUICKTIME,	//!< Quicktime QCELP muxing
-} MUXING_FLAVOR_t;
-
-typedef enum {
-	MUXER_STREAMS_BOTH,			//!< Both video and audio streams
-	MUXER_STREAMS_VIDEO,		//!< Only video stream
-	MUXER_STREAMS_AUDIO,		//!< Only audio stream
-} MUXER_STREAMS_t;
-
-/*!
- * \brief Video recording options
+ * \brief recording options
  */
 typedef struct {
 
 	char					file[PATH_MAX];
 
-	unsigned int			data_throughput;
+	SOURCE_DEVICE_t			source_device;
 
-	int						num_buffers;
-	VIDEO_FORMAT_t			video_format;
-	unsigned int			video_bitrate;
+	unsigned int			stream_rate;
+	unsigned int			channels;
+	unsigned int			endianness;
 
-	unsigned int			audio_sampling_rate;
-	AUDIO_ENCODING_t		audio_encoding;
-	unsigned int			aac_stream_bitrate;
-	AACEncodingQuality_t	aac_encoding_quality;
+	unsigned int			width;
+	unsigned int			depth;
+	unsigned int			lame_bitrate;
+	unsigned int			lame_quality;
 
-	MUXING_FLAVOR_t			muxer_flavor;
-	MUXER_STREAMS_t			muxer_streams;
+	char					filename;
+	VOICE_ACTIVATION_t		voice_activation;
 
 } PIPELINE_OPTS_t;
 
