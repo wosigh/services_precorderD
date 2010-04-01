@@ -213,6 +213,7 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	GstElement *psrc, *vact, *aenc, *fsink;
 	GstCaps *acaps;
 	GstBus *bus;
+	gint watch_id;
 	extern gdouble rms;
 
 	gst_init(NULL, NULL);
@@ -258,10 +259,15 @@ int record_video(PIPELINE_OPTS_t *opts) {
 	gst_element_link_filtered(psrc, vact, aenc);
 	gst_element_link(fsink, NULL);
 
+	bus = gst_element_get_bus (precorder);
+	watch_id = gst_bus_add_watch (bus, message_handler, NULL);
+
 	int state;
 	state = 1;
 
 	if (opts->voice_activation == VOICE_ACTIVATION_YES) {
+		// run sync'ed so it doesn't trip over itself
+		g_object_set (G_OBJECT (filesink), "sync", TRUE, NULL);
 		while (gst_app_sink_is_eos() == FALSE) {
 			if ((rms >= 0.2) && (state != 1)) {
 				gst_element_set_state(pipeline, GST_STATE_PLAYING);
