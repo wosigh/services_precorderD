@@ -1,6 +1,30 @@
 #!/bin/sh                                                                                       
 
-PID="us.ryanhope.precorderD"
+PID="us.webosinternals.precorderD"
+
+MP3LAME="bin/libmp3lame.so"
+GSTLAME="bin/libgstlame.so"
+GSTLEVEL="bin/libgstlevel.so"
+MP3LAMESYM="/usr/lib/libmp3lame.so"
+GSTLAMESYM="/usr/lib/gstreamer-0.10/libgstlame-webosinternals.so"
+GSTLEVELSYM="/usr/lib/gstreamer-0.10/libgstlevel-webosinternals.so"
+
+if [ -z "$IPKG_OFFLINE_ROOT" ]; then
+  IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+fi
+
+# Symlink lame binary
+rm -f $MP3LAMESYM
+ln -s $IPKG_OFFLINE_ROOT/usr/palm/applications/$PID/$MP3LAME $MP3LAMESYM
+
+# Symlink gstreamer binaries
+rm -f $GSTLAMESYM
+rm -f $GSTLEVELSYM
+ln -s $IPKG_OFFLINE_ROOT/usr/palm/applications/$PID/$GSTLAME $GSTLAMESYM
+ln -s $IPKG_OFFLINE_ROOT/usr/palm/applications/$PID/$GSTLEVEL $GSTLAMELEVEL
+
+# Register gstreamer binaries
+gst-inspect
 
 # Install the upstart script
 rm -f /etc/event.d/${PID}
